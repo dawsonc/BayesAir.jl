@@ -5,7 +5,9 @@ using Gen
 include("types/Flight.jl")
 include("types/Airport.jl")
 include("types/NetworkState.jl")
-include("ScheduleLoader.jl")
+include("ScheduleParser.jl")
+
+import .DataLoader
 
 """
     simulate_day(
