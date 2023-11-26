@@ -1,21 +1,18 @@
-using CSV
 using DataFrames
+using CSV
+using Plots
 using Dates
+using FreqTables
 
-
-"""
-Load flight data from CSV files.
-
-Returns:
-    DataFrame: A DataFrame containing flight data.
-"""
 function load_all_data()
-    # Get the directory of the current file
+    """Get all available WN flight data"""
+    # Get the directory of the current file -- this should be BayesAir.jl-main
     script_directory = dirname(@__FILE__)
+    root = dirname(script_directory)
 
     # Construct the relative path to the CSV file
-    nominal_file_path = joinpath(script_directory, "..", "data", "wn_dec01_dec20.csv")
-    disrupted_file_path = joinpath(script_directory, "..", "data", "wn_dec21_dec30.csv")
+    nominal_file_path = joinpath(root, "data", "wn_dec01_dec20.csv")
+    disrupted_file_path = joinpath(root, "data", "wn_dec21_dec30.csv")
 
     # Read the CSV files into a DataFrame
     nominal_df = CSV.File(nominal_file_path) |> DataFrame
@@ -27,50 +24,47 @@ function load_all_data()
     return df
 end
 
-"""
-Split dataset into nominal data and disrupted data.
+function split_nominal_disrupted_data(df)
+    """Split dataset into nominal data and disrupted data.
 
-The disruption occurred between 2022-12-21 and 2022-12-30.
+    The disruption occurred between 2022-12-21 and 2022-12-30
 
-Args:
-    df (DataFrame): The dataframe of flight data.
+    Args:
+        df: the dataframe of flight data
 
-Returns:
-    (DataFrame, DataFrame): A tuple of two DataFrames. The first contains data
-    outside the disrupted period, and the second contains data within the disrupted period.
-"""
-function split_nominal_disrupted_data(df::DataFrame)
+    Returns:
+        A dataframe filtered to include only flights outside the disrupted period
+        A dataframe filtered to include flights within the disrupted period
+    """
     # Filter rows based on the date condition
-    disrupted_start = DateTime("2022-12-21")
-    disrupted_end = DateTime("2022-12-30")
+    disrupted_start = Date(2022, 12, 21)
+    disrupted_end = Date(2022, 12, 30)
+    println(disrupted_start)
+    println(disrupted_end)
 
     # Filter rows based on the date condition
-    nominal_data = filter(row -> row.date < disrupted_start || row.date > disrupted_end, df)
-    disrupted_data = filter(row -> row.date >= disrupted_start && row.date <= disrupted_end, df)
+    dfmt = dateformat"mm/dd/yyyy"
+
+    nominal_data = filter(:Date => row -> Date(row, dfmt) < disrupted_start || Date(row, dfmt) > disrupted_end, df)
+    disrupted_data = filter(:Date => row -> Date(row,dfmt) >= disrupted_start && Date(row, dfmt) <= disrupted_end, df)
 
     return nominal_data, disrupted_data
 end
 
-"""
-Split a DataFrame of flights into a list of DataFrames, one for each date.
+function split_by_date(df)
+    """Split a DataFrame of flights into a list of DataFrames, one for each date.
 
-Args:
-    df (DataFrame): The dataframe of flight data with a "date" column.
+    Args:
+        df: the dataframe of flight data with a "Date" column
 
-Returns:
-    Vector{DataFrame}: A vector of DataFrames, each containing data for a specific date.
-"""
-function split_by_date(df::DataFrame)
-    # Group the DataFrame by the "date" column
-    grouped_df = groupby(df, :date)
+    Returns:
+        A list of DataFrames, each containing data for a specific date
+    """
+    # Group the DataFrame by the "Date" column
+    grouped_df = groupby(df, :Date)
 
-    # Create a vector of DataFrames, one for each date
+    # Create a list of DataFrames, one for each date
     date_dataframes = [group for group in grouped_df]
-
-    # Sort each by scheduled departure time
-    for date_df in date_dataframes
-        sort!(date_df, :scheduled_departure_time)
-    end
 
     return date_dataframes
 end
