@@ -2,7 +2,6 @@ using DataFrames
 using CSV
 using Plots
 using Dates
-using FreqTables
 
 function load_all_data()
     """Get all available WN flight data"""
@@ -39,14 +38,12 @@ function split_nominal_disrupted_data(df)
     # Filter rows based on the date condition
     disrupted_start = Date(2022, 12, 21)
     disrupted_end = Date(2022, 12, 30)
-    println(disrupted_start)
-    println(disrupted_end)
 
     # Filter rows based on the date condition
     dfmt = dateformat"mm/dd/yyyy"
 
-    nominal_data = filter(:Date => row -> Date(row, dfmt) < disrupted_start || Date(row, dfmt) > disrupted_end, df)
-    disrupted_data = filter(:Date => row -> Date(row,dfmt) >= disrupted_start && Date(row, dfmt) <= disrupted_end, df)
+    nominal_data = filter(row -> row.date < disrupted_start || row.date > disrupted_end, df)
+    disrupted_data = filter(row -> row.date >= disrupted_start && row.date <= disrupted_end, df)
 
     return nominal_data, disrupted_data
 end
@@ -61,10 +58,15 @@ function split_by_date(df)
         A list of DataFrames, each containing data for a specific date
     """
     # Group the DataFrame by the "Date" column
-    grouped_df = groupby(df, :Date)
+    grouped_df = groupby(df, :date)
 
     # Create a list of DataFrames, one for each date
     date_dataframes = [group for group in grouped_df]
+
+    # Sort each by scheduled departure time
+    for date_df in date_dataframes
+        sort!(date_df, :scheduled_departure_time)
+    end
 
     return date_dataframes
 end
