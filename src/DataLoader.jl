@@ -112,8 +112,8 @@ function remap_columns(df::DataFrame)
     column_mapping = Dict(
         "Flight Number" => "flight_number",
         "Date" => "date",
-        "Origin Airport Code" => "origin_airport",
-        "Dest Airport Code" => "destination_airport",
+        "Origin Airport Code" => "origin",
+        "Dest Airport Code" => "destination",
         "Scheduled Departure Time" => "scheduled_departure_time",
         "Scheduled Arrival Time" => "scheduled_arrival_time",
         "Actual Departure Time" => "actual_departure_time",
@@ -126,11 +126,21 @@ function remap_columns(df::DataFrame)
     # Rename the columns based on the mapping
     rename!(remapped_df, column_mapping)
 
+    # Convert flight numbers to strings
+    remapped_df.flight_number .= string.(remapped_df.flight_number)
+
     # Convert all times to hours since midnight
     remapped_df.scheduled_departure_time .= convert_to_float_hours_optimized(remapped_df.scheduled_departure_time)
     remapped_df.scheduled_arrival_time .= convert_to_float_hours_optimized(remapped_df.scheduled_arrival_time)
     remapped_df.actual_departure_time .= convert_to_float_hours_optimized(remapped_df.actual_departure_time)
     remapped_df.actual_arrival_time .= convert_to_float_hours_optimized(remapped_df.actual_arrival_time)
+
+    # If any flight is en-route at midnight, it's duration will be negative unless we add 24 hours
+    # to the actual and scheduled arrival times
+    scheduled_duration = remapped_df.scheduled_arrival_time - remapped_df.scheduled_departure_time
+    actual_duration = remapped_df.actual_arrival_time - remapped_df.actual_departure_time
+    remapped_df.scheduled_arrival_time .= remapped_df.scheduled_arrival_time .+ (scheduled_duration .< 0) .* 24
+    remapped_df.actual_arrival_time .= remapped_df.actual_arrival_time .+ (actual_duration .< 0) .* 24
 
     # Convert date to DateTime type
     remapped_df.date .= Dates.DateTime.(remapped_df.date, dateformat"mm/dd/yyyy")
@@ -147,12 +157,12 @@ Args:
 """
 function top_N_df(df::DataFrame, number_of_airports::Int)
     # Get the top-N airports by arrivals
-    top_N_airports = combine(groupby(df, :destination_airport), :destination_airport => length => :nrow)
+    top_N_airports = combine(groupby(df, :destination), :destination => length => :nrow)
     sort!(top_N_airports, :nrow, rev=true)
     top_N_airports = top_N_airports[1:number_of_airports, :]
 
     # Filter the original DataFrame based on the desired airports
-    filtered_df = filter(row -> row.destination_airport in top_N_airports.destination_airport, df)
+    filtered_df = filter(row -> row.destination in top_N_airports.destination && row.origin in top_N_airports.destination, df)
 
     return filtered_df
 end

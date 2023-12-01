@@ -161,7 +161,7 @@ each flight will take to service.
                 push!(departing_flights, queue_entry.flight)
             else
                 assign_arrival_time!(a, queue_entry)
-                assign_turnaround_time(a, queue_entry.flight)
+                {*} ~ assign_turnaround_time(a, queue_entry.flight)
                 push!(landing_flights, queue_entry.flight)
             end
         end
@@ -189,6 +189,7 @@ the flight will take to service.
 
     # Sample a service time
     key = departing ? :departure_service_time : :arrival_service_time
+    # TODO does this need the exp trick?
     service_time = {(flight_code(queue_entry.flight), key)} ~ exponential(1 / a.mean_service_time)
 
     # Update the queue waiting times for all other aircraft
@@ -250,7 +251,7 @@ the flight will take to service.
 """
 @gen function assign_turnaround_time(a::Airport, flight::Flight)
     # Sample a turnaround time
-    turnaround_time = {(flight, :turnaround_time)} ~ normal(a.mean_turnaround_time, a.turnaround_time_std_dev)
+    turnaround_time = {(flight_code(flight), :turnaround_time)} ~ normal(a.mean_turnaround_time, a.turnaround_time_std_dev)
 
     # Add the turnaround time to the turnaround queue
     push!(a.turnaround_queue, flight.simulated_arrival_time + turnaround_time)

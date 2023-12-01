@@ -2,7 +2,7 @@
 
 # Time = Float64
 Time = Real
-AirportCode = String
+AirportCode = AbstractString
 
 """
     Flight
@@ -21,7 +21,7 @@ A flight between two airports.
 - `actual_arrival_time::Union{Time, Nothing}`: The actual arrival time (optional).
 """
 mutable struct Flight
-    flight_number::String
+    flight_number::AbstractString
     origin::AirportCode
     destination::AirportCode
     scheduled_departure_time::Time
@@ -33,7 +33,7 @@ mutable struct Flight
 end
 
 function Flight(
-    flight_number::String,
+    flight_number::AbstractString,
     origin::AirportCode,
     destination::AirportCode,
     scheduled_departure_time::Time,

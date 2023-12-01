@@ -115,9 +115,15 @@ Simulate the network states in `states` until `end_time`, in increments of `dt`.
     states = deepcopy(states)
 
     # Sample system-level latent variables
-    measurement_variation = {:measurement_variation} ~ uniform(0.0, 0.1)
-    travel_time_variation = {:travel_time_variation} ~ uniform(0.0, 0.1)
-    turnaround_time_variation = {:turnaround_time_variation} ~ uniform(0.0, 0.1)
+    # measurement_variation = {:measurement_variation} ~ exponential(1 / 0.1)
+    # travel_time_variation = {:travel_time_variation} ~ exponential(1 / 0.1)
+    # turnaround_time_variation = {:turnaround_time_variation} ~ exponential(1 / 0.1)
+    log_measurement_variation = {:log_measurement_variation} ~ normal(0.0, 1.0)
+    measurement_variation = 0.1 * exp(log_measurement_variation)
+    log_travel_time_variation = {:log_travel_time_variation} ~ normal(0.0, 1.0)
+    travel_time_variation = 0.1 * exp(log_travel_time_variation)
+    log_turnaround_time_variation = {:log_turnaround_time_variation} ~ normal(0.0, 1.0)
+    turnaround_time_variation = 0.1 * exp(log_turnaround_time_variation)
 
     # Sample latent variables for the airports
     # (assume that all states have the same airports)
@@ -126,13 +132,20 @@ Simulate the network states in `states` until `end_time`, in increments of `dt`.
     airport_mean_service_times = Dict{AirportCode,Time}()
     travel_times = Dict{Tuple{AirportCode,AirportCode},Time}()
     for code in airport_codes
-        airport_mean_turnaround_times[code] = {(code, :turnaround_time)} ~ uniform(0.0, 1.0)
-        airport_mean_service_times[code] = {(code, :service_time)} ~ uniform(0.0, 0.1)
+        # Sample turnaround and service times for each airport
+        # airport_mean_turnaround_times[code] = {(code, :turnaround_time)} ~ exponential(1 / 1.0)
+        # airport_mean_service_times[code] = {(code, :service_time)} ~ exponential(1 / 0.1)
+        log_mean_turnaround_time = {(code, :log_turnaround_time)} ~ normal(0.0, 1.0)
+        airport_mean_turnaround_times[code] = 1.0 * exp(log_mean_turnaround_time)
+        log_mean_service_time = {(code, :log_service_time)} ~ normal(0.0, 1.0)
+        airport_mean_service_times[code] = 0.1 * exp(log_mean_service_time)
 
         # Sample travel times between airports
         for origin in airport_codes
             if origin != code
-                travel_times[(origin, code)] = {(origin, code, :travel_time)} ~ uniform(0.0, 6.0)
+                # travel_times[(origin, code)] = {(origin, code, :travel_time)} ~ uniform(0.0, 6.0)
+                log_travel_time = {(origin, code, :log_travel_time)} ~ normal(0.0, 1.0)
+                travel_times[(origin, code)] = 3.0 * exp(log_travel_time)
             end
         end
     end

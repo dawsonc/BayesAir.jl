@@ -6,7 +6,7 @@ using Gen
 Represents the state of the network at a given time.
 
 # Attributes
-- `airports::Dict{AirportCode, Airport}`: A dictionary mapping airport codes to
+- `airports::Dict{<:AirportCode, Airport}`: A dictionary mapping airport codes to
     `Airport` objects.
 - `pending_flights::Vector{Flight}`: A list of flights that have not yet departed.
 - `in_transit_flights::Vector{Tuple{Flight, Time}}`: A list of flights that
@@ -14,13 +14,13 @@ Represents the state of the network at a given time.
 - `completed_flights::Vector{Flight}`: A list of flights that have arrived.
 """
 mutable struct NetworkState
-    airports::Dict{AirportCode,Airport}
+    airports::Dict{<:AirportCode,Airport}
     pending_flights::Vector{Flight}
     in_transit_flights::Vector{Tuple{Flight,Time}}
     completed_flights::Vector{Flight}
 end
 
-function NetworkState(airports::Dict{AirportCode,Airport}, pending_flights::Vector{Flight})
+function NetworkState(airports::Dict{<:AirportCode,Airport}, pending_flights::Vector{Flight})
     return NetworkState(
         airports,
         pending_flights,
