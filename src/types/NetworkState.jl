@@ -110,10 +110,11 @@ This is a generative function because it makes random choices about travel times
     for flight in departing_flights
         nominal_travel_time = travel_times[(flight.origin, flight.destination)]
         nominal_travel_time = max(nominal_travel_time, 0.0)
-        travel_time = {(flight_code(flight), :travel_time)} ~ normal(
-            nominal_travel_time,
-            nominal_travel_time * travel_time_variation
-        )
+        # travel_time = {(flight_code(flight), :travel_time)} ~ normal(
+        #     nominal_travel_time,
+        #     nominal_travel_time * travel_time_variation
+        # )
+        travel_time = nominal_travel_time  # TODO is deterministic model enough?
 
         # Add the flight to the in-transit flights list
         push!(state.in_transit_flights,

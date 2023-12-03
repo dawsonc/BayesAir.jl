@@ -84,6 +84,43 @@ Simulate the network state from `state` until `end_time`, in increments of `dt`.
         @debug "Flight $(flight_code(flight)) measured arrival time $(measured_arrival_time)" *
                " (actual arrival time: $(flight.actual_arrival_time))"
     end
+
+    # For any flights that are not yet completed, sample their actual arrival
+    # and departure times around the maximum simulation time
+    for (flight, _) in state.in_transit_flights
+        measured_departure_time = {(flight_code(flight), :actual_departure_time)} ~ normal(
+            end_time,
+            measurement_variation
+        )
+        measured_arrival_time = {(flight_code(flight), :actual_arrival_time)} ~ normal(
+            end_time,
+            measurement_variation
+        )
+
+        @debug "Flight $(flight_code(flight)) measured departure time $(measured_departure_time)" *
+               " (actual departure time: $(flight.actual_departure_time))"
+        @debug "Flight $(flight_code(flight)) measured arrival time $(measured_arrival_time)" *
+               " (actual arrival time: $(flight.actual_arrival_time))"
+    end
+
+    for airport in values(state.airports)
+        for queue_entry in airport.runway_queue
+            flight = queue_entry.flight
+            measured_departure_time = {(flight_code(flight), :actual_departure_time)} ~ normal(
+                end_time,
+                measurement_variation
+            )
+            measured_arrival_time = {(flight_code(flight), :actual_arrival_time)} ~ normal(
+                end_time,
+                measurement_variation
+            )
+
+            @debug "Flight $(flight_code(flight)) measured departure time $(measured_departure_time)" *
+                   " (actual departure time: $(flight.actual_departure_time))"
+            @debug "Flight $(flight_code(flight)) measured arrival time $(measured_arrival_time)" *
+                   " (actual arrival time: $(flight.actual_arrival_time))"
+        end
+    end
 end
 
 """
@@ -115,15 +152,9 @@ Simulate the network states in `states` until `end_time`, in increments of `dt`.
     states = deepcopy(states)
 
     # Sample system-level latent variables
-    # measurement_variation = {:measurement_variation} ~ exponential(1 / 0.1)
-    # travel_time_variation = {:travel_time_variation} ~ exponential(1 / 0.1)
-    # turnaround_time_variation = {:turnaround_time_variation} ~ exponential(1 / 0.1)
-    log_measurement_variation = {:log_measurement_variation} ~ normal(0.0, 1.0)
-    measurement_variation = 0.1 * exp(log_measurement_variation)
-    log_travel_time_variation = {:log_travel_time_variation} ~ normal(0.0, 1.0)
-    travel_time_variation = 0.1 * exp(log_travel_time_variation)
-    log_turnaround_time_variation = {:log_turnaround_time_variation} ~ normal(0.0, 1.0)
-    turnaround_time_variation = 0.1 * exp(log_turnaround_time_variation)
+    measurement_variation = {:measurement_variation} ~ exponential(1 / 0.2)
+    travel_time_variation = {:travel_time_variation} ~ exponential(1 / 0.2)
+    turnaround_time_variation = {:turnaround_time_variation} ~ exponential(1 / 0.2)
 
     # Sample latent variables for the airports
     # (assume that all states have the same airports)
@@ -133,19 +164,13 @@ Simulate the network states in `states` until `end_time`, in increments of `dt`.
     travel_times = Dict{Tuple{AirportCode,AirportCode},Time}()
     for code in airport_codes
         # Sample turnaround and service times for each airport
-        # airport_mean_turnaround_times[code] = {(code, :turnaround_time)} ~ exponential(1 / 1.0)
-        # airport_mean_service_times[code] = {(code, :service_time)} ~ exponential(1 / 0.1)
-        log_mean_turnaround_time = {(code, :log_turnaround_time)} ~ normal(0.0, 1.0)
-        airport_mean_turnaround_times[code] = 1.0 * exp(log_mean_turnaround_time)
-        log_mean_service_time = {(code, :log_service_time)} ~ normal(0.0, 1.0)
-        airport_mean_service_times[code] = 0.1 * exp(log_mean_service_time)
+        airport_mean_turnaround_times[code] = {(code, :turnaround_time)} ~ exponential(1 / 1.0)
+        airport_mean_service_times[code] = {(code, :service_time)} ~ exponential(1 / 0.2)
 
         # Sample travel times between airports
         for origin in airport_codes
             if origin != code
-                # travel_times[(origin, code)] = {(origin, code, :travel_time)} ~ uniform(0.0, 6.0)
-                log_travel_time = {(origin, code, :log_travel_time)} ~ normal(0.0, 1.0)
-                travel_times[(origin, code)] = 3.0 * exp(log_travel_time)
+                travel_times[(origin, code)] = {(origin, code, :travel_time)} ~ uniform(0.0, 10.0)
             end
         end
     end

@@ -189,8 +189,8 @@ the flight will take to service.
 
     # Sample a service time
     key = departing ? :departure_service_time : :arrival_service_time
-    # TODO does this need the exp trick?
-    service_time = {(flight_code(queue_entry.flight), key)} ~ exponential(1 / a.mean_service_time)
+    # service_time = {(flight_code(queue_entry.flight), key)} ~ exponential(1 / a.mean_service_time)
+    service_time = a.mean_service_time  # TODO is deterministic model enough?
 
     # Update the queue waiting times for all other aircraft
     for i in 1:length(a.runway_queue)
@@ -251,7 +251,8 @@ the flight will take to service.
 """
 @gen function assign_turnaround_time(a::Airport, flight::Flight)
     # Sample a turnaround time
-    turnaround_time = {(flight_code(flight), :turnaround_time)} ~ normal(a.mean_turnaround_time, a.turnaround_time_std_dev)
+    # turnaround_time = {(flight_code(flight), :turnaround_time)} ~ normal(a.mean_turnaround_time, a.turnaround_time_std_dev)
+    turnaround_time = a.mean_turnaround_time  # TODO is deterministic model enough?
 
     # Add the turnaround time to the turnaround queue
     push!(a.turnaround_queue, flight.simulated_arrival_time + turnaround_time)
